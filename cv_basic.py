@@ -1,7 +1,8 @@
 import cv2
+import torch
+import numpy as np
 import matplotlib.pyplot as plt
 from torchvision import datasets
-import torch
 import torch.nn as nn
 from torch.optim import SGD
 from torch.utils.data import Dataset, DataLoader
@@ -82,5 +83,39 @@ def accuracy(x, y, model):
 tr_images, tr_targets = load_img_dataset(False)
 train_dl = get_data(tr_images, tr_targets)
 model, loss_func, opt = get_model()
+
+losses, accuracies = [], []
+for epoch in range(5):
+    print('Epoch', epoch)
+    epoch_losses, epoch_accuracies = [], []
+
+    for index, batch in enumerate(iter(train_dl)):
+        x, y = batch
+        batch_loss = train_batch(x, y, model, opt, loss_func)
+        epoch_losses.append(batch_loss)
+    
+    for index, batch in enumerate(iter(train_dl)):
+        x, y = batch
+        is_correct = accuracy(x, y, model)
+        epoch_accuracies.append(is_correct)
+    
+    epoch_loss = np.array(epoch_losses).mean()
+    epoch_accuracy = np.mean(epoch_accuracies)
+    losses.append(epoch_loss)
+    accuracies.append(epoch_accuracy)
+
+epochs = np.arange(5)+1
+plt.figure(figsize=(20,5))
+plt.subplot(121)
+plt.title('Loss value over increasing epochs')
+plt.plot(epochs, losses, label='Training Loss')
+plt.legend()
+plt.subplot(122)
+plt.title('Accuracy value over increasing epochs')
+plt.plot(epochs, accuracies, label='Training Accuracy')
+plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
+plt.legend()
+plt.show()
+
 
 
