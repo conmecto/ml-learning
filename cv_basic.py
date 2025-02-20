@@ -34,15 +34,22 @@ def load_img_dataset(download=False):
     fmnist = datasets.FashionMNIST(data_path, download=download, train=True)
     tr_images = fmnist.data
     tr_targets = fmnist.targets
-    print('Data size', len(tr_images))
-    print('Shape', tr_images.shape)
     print('Classes', fmnist.classes)
     print('Unique values', tr_targets.unique())
-    return tr_images, tr_targets
+    print('Training data')
+    print('Data size', len(tr_images))
+    print('Shape', tr_images.shape)
+    val_fmnist = datasets.FashionMNIST(data_path, download=download, train=False)
+    val_images = val_fmnist.data
+    val_targets = val_fmnist.targets
+    print('Validation data')
+    print('Data size', len(val_images))
+    print('Shape', val_images.shape)
+    return tr_images, tr_targets, val_images, val_targets
 
 class FMNISTDataset(Dataset):
     def __init__(self, x, y):
-        float_x = x.float()
+        float_x = x.float()/255
         reshaped_x = float_x.view(-1, 28 * 28)
         self.x, self.y = reshaped_x, y
 
@@ -52,10 +59,12 @@ class FMNISTDataset(Dataset):
     def __len__(self):
         return len(self.x)
 
-def get_data(x, y):
-    fmnistDataset = FMNISTDataset(x, y)
-    train_dl = DataLoader(fmnistDataset, batch_size=32, shuffle=True)
-    return train_dl
+def get_data(tr_images, tr_targets, val_images, val_targets):
+    train = FMNISTDataset(tr_images, tr_targets)
+    train_dl = DataLoader(train, batch_size=32, shuffle=True)
+    val = FMNISTDataset(val_images, val_targets)
+    val_dl = DataLoader(val, batch_size=len(val_images), shuffle=False)
+    return train_dl, val_dl
 
 def get_model():
     model = nn.Sequential(nn.Linear(28 * 28, 1000), nn.ReLU(), nn.Linear(1000, 10))
@@ -80,39 +89,56 @@ def accuracy(x, y, model):
     is_correct = argmaxes == y
     return is_correct.numpy().tolist()
 
-tr_images, tr_targets = load_img_dataset(False)
-train_dl = get_data(tr_images, tr_targets)
+@torch.no_grad()
+def cal_val_loss(x, y, model, loss_func):
+    model.eval()
+    y_pred = model(x)
+    val_loss = loss_func(y_pred, y)
+    return val_loss.item()
+
+tr_images, tr_targets, val_images, val_targets = load_img_dataset(False)
+train_dl, val_dl = get_data(tr_images, tr_targets, val_images, val_targets)
 model, loss_func, opt = get_model()
 
-losses, accuracies = [], []
+train_losses, train_accuracies = [], []
+val_losses, val_accuracies = [], []
 for epoch in range(5):
     print('Epoch', epoch)
-    epoch_losses, epoch_accuracies = [], []
+    train_epoch_losses, train_epoch_accuracies = [], []
 
     for index, batch in enumerate(iter(train_dl)):
         x, y = batch
         batch_loss = train_batch(x, y, model, opt, loss_func)
-        epoch_losses.append(batch_loss)
+        train_epoch_losses.append(batch_loss)
     
     for index, batch in enumerate(iter(train_dl)):
         x, y = batch
         is_correct = accuracy(x, y, model)
-        epoch_accuracies.append(is_correct)
-    
-    epoch_loss = np.array(epoch_losses).mean()
-    epoch_accuracy = np.mean(epoch_accuracies)
-    losses.append(epoch_loss)
-    accuracies.append(epoch_accuracy)
+        train_epoch_accuracies.append(is_correct)
+
+    for index, batch in enumerate(iter(val_dl)):
+        x, y = batch
+        val_is_correct = accuracy(x, y, model)
+        val_loss = cal_val_loss(x, y, model, loss_func)
+
+    epoch_loss = np.array(train_epoch_losses).mean()
+    train_losses.append(epoch_loss)
+    epoch_accuracy = np.mean(train_epoch_accuracies)
+    train_accuracies.append(epoch_accuracy)
+    val_losses.append(val_loss)
+    val_epoch_accuracy = np.mean(val_is_correct)
+    val_accuracies.append(val_epoch_accuracy)
+
 
 epochs = np.arange(5)+1
 plt.figure(figsize=(20,5))
 plt.subplot(121)
 plt.title('Loss value over increasing epochs')
-plt.plot(epochs, losses, label='Training Loss')
+plt.plot(epochs, train_losses, label='Training Loss')
 plt.legend()
 plt.subplot(122)
 plt.title('Accuracy value over increasing epochs')
-plt.plot(epochs, accuracies, label='Training Accuracy')
+plt.plot(epochs, train_accuracies, label='Training Accuracy')
 plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
 plt.legend()
 plt.show()
