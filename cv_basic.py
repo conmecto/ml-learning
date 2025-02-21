@@ -6,6 +6,8 @@ from torchvision import datasets
 import torch.nn as nn
 from torch.optim import SGD
 from torch.utils.data import Dataset, DataLoader
+import matplotlib.ticker as mtick
+import matplotlib.ticker as mticker
 
 def load_sample_img():
     img = cv2.imread('./data/flower_valley.jpg')
@@ -49,7 +51,7 @@ def load_img_dataset(download=False):
 
 class FMNISTDataset(Dataset):
     def __init__(self, x, y):
-        float_x = x.float()/255
+        float_x = x.float() / 255
         reshaped_x = float_x.view(-1, 28 * 28)
         self.x, self.y = reshaped_x, y
 
@@ -67,15 +69,29 @@ def get_data(tr_images, tr_targets, val_images, val_targets):
     return train_dl, val_dl
 
 def get_model():
-    model = nn.Sequential(nn.Linear(28 * 28, 1000), nn.ReLU(), nn.Linear(1000, 10))
+    model = nn.Sequential(
+        # nn.Dropout(0.25),
+        nn.Linear(28 * 28, 1000), 
+        nn.ReLU(), 
+        nn.BatchNorm1d(1000),
+        # nn.Dropout(0.25),
+        nn.Linear(1000, 10)
+        )
     loss_func = nn.CrossEntropyLoss()
-    opt = SGD(model.parameters(), lr=0.01)
+    opt = SGD(model.parameters(), lr=0.001)
     return model, loss_func, opt
 
 def train_batch(x, y, model, opt, loss_func):
     model.train()
     y_pred = model(x)
-    loss = loss_func(y_pred, y)
+    # l1_regularization = 0
+    # for param in model.parameters():
+    #     l1_regularization += torch.norm(param, 1)
+    # loss = loss_func(y_pred, y) + 0.0001 * l1_regularization
+    l2_regularization = 0
+    for param in model.parameters():
+        l2_regularization += torch.norm(param, 2)
+    loss = loss_func(y_pred, y) + 0.01 * l2_regularization
     loss.backward()
     opt.step()
     opt.zero_grad()
@@ -102,7 +118,7 @@ model, loss_func, opt = get_model()
 
 train_losses, train_accuracies = [], []
 val_losses, val_accuracies = [], []
-for epoch in range(5):
+for epoch in range(10):
     print('Epoch', epoch)
     train_epoch_losses, train_epoch_accuracies = [], []
 
@@ -130,17 +146,28 @@ for epoch in range(5):
     val_accuracies.append(val_epoch_accuracy)
 
 
-epochs = np.arange(5)+1
-plt.figure(figsize=(20,5))
-plt.subplot(121)
-plt.title('Loss value over increasing epochs')
-plt.plot(epochs, train_losses, label='Training Loss')
+epochs = np.arange(10)+1
+
+plt.subplot(211)
+plt.plot(epochs, train_losses, 'bo', label='Training loss')
+plt.plot(epochs, val_losses, 'r', label='Validation loss')
+plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+plt.title('Training and validation loss with Adam optimizer')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
 plt.legend()
-plt.subplot(122)
-plt.title('Accuracy value over increasing epochs')
-plt.plot(epochs, train_accuracies, label='Training Accuracy')
+plt.grid('off')
+plt.show()
+plt.subplot(212)
+plt.plot(epochs, train_accuracies, 'bo', label='Training accuracy')
+plt.plot(epochs, val_accuracies, 'r', label='Validation accuracy')
+plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+plt.title('Training and validation accuracy with Adam optimizer')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
 plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
 plt.legend()
+plt.grid('off')
 plt.show()
 
 
