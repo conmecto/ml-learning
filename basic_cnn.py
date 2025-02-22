@@ -7,6 +7,7 @@ from torchvision import datasets
 import matplotlib.pyplot as plt
 from torchsummary import summary
 import matplotlib.ticker as mticker
+import seaborn as sns
 
 def get_model():
     model = nn.Sequential(
@@ -97,43 +98,60 @@ for epoch in range(5):
         train_epoch_losses.append(batch_loss)        
     train_epoch_loss = np.array(train_epoch_losses).mean()
 
-    for ix, batch in enumerate(iter(train_dl)):
-        x, y = batch
-        is_correct = accuracy(x, y, model)
-        train_epoch_accuracies.extend(is_correct)
-    train_epoch_accuracy = np.mean(train_epoch_accuracies)
+    # for ix, batch in enumerate(iter(train_dl)):
+    #     x, y = batch
+    #     is_correct = accuracy(x, y, model)
+    #     train_epoch_accuracies.extend(is_correct)
+    # train_epoch_accuracy = np.mean(train_epoch_accuracies)
 
-    for ix, batch in enumerate(iter(val_dl)):
-        x, y = batch
-        val_is_correct = accuracy(x, y, model)
-        validation_loss = val_loss(x, y, model, loss_fn)
-    val_epoch_accuracy = np.mean(val_is_correct)
+    # for ix, batch in enumerate(iter(val_dl)):
+    #     x, y = batch
+    #     val_is_correct = accuracy(x, y, model)
+    #     validation_loss = val_loss(x, y, model, loss_fn)
+    # val_epoch_accuracy = np.mean(val_is_correct)
 
     train_losses.append(train_epoch_loss)
-    train_accuracies.append(train_epoch_accuracy)
-    val_losses.append(validation_loss)
-    val_accuracies.append(val_epoch_accuracy)
+    # train_accuracies.append(train_epoch_accuracy)
+    # val_losses.append(validation_loss)
+    # val_accuracies.append(val_epoch_accuracy)
 
-epochs = np.arange(5)+1
-plt.subplot(211)
-plt.plot(epochs, train_losses, 'bo', label='Training loss')
-plt.plot(epochs, val_losses, 'r', label='Validation loss')
-plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
-plt.title('Training and validation loss with CNN')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.grid('off')
-plt.show()
-plt.subplot(212)
-plt.plot(epochs, train_accuracies, 'bo', label='Training accuracy')
-plt.plot(epochs, val_accuracies, 'r', label='Validation accuracy')
-plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
-plt.title('Training and validation accuracy with CNN')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-#plt.ylim(0.8,1)
-plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
-plt.legend()
-plt.grid('off')
-plt.show()
+
+# epochs = np.arange(5)+1
+# plt.subplot(211)
+# plt.plot(epochs, train_losses, 'bo', label='Training loss')
+# plt.plot(epochs, val_losses, 'r', label='Validation loss')
+# plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+# plt.title('Training and validation loss with CNN')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.grid('off')
+# plt.show()
+# plt.subplot(212)
+# plt.plot(epochs, train_accuracies, 'bo', label='Training accuracy')
+# plt.plot(epochs, val_accuracies, 'r', label='Validation accuracy')
+# plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+# plt.title('Training and validation accuracy with CNN')
+# plt.xlabel('Epochs')
+# plt.ylabel('Accuracy')
+# #plt.ylim(0.8,1)
+# plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
+# plt.legend()
+# plt.grid('off')
+# plt.show()
+
+preds = []
+ix = 24300
+for px in range(-5,6):
+    img = x_train[ix]/255.
+    img = img.view(28, 28)
+    img2 = np.roll(img, px, axis=1)
+    plt.imshow(img2)
+    plt.show()
+    img3 = torch.Tensor(img2).view(-1,1,28,28)
+    np_output = model(img3).detach().numpy()
+    preds.append(np.exp(np_output)/np.sum(np.exp(np_output)))
+
+fig, ax = plt.subplots(1,1, figsize=(12,10))
+plt.title('Probability of each class for various translations')
+sns.heatmap(np.array(preds).reshape(11,10), annot=True, ax=ax,fmt='.2f', xticklabels=train_fmnist.classes, yticklabels=[str(i)+str(' pixels') for i in range(-5,6)], cmap='gray')
