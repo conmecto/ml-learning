@@ -8,6 +8,8 @@ from torch.optim import SGD
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.ticker as mtick
 import matplotlib.ticker as mticker
+import seaborn as sns
+
 
 def load_sample_img():
     img = cv2.imread('./data/flower_valley.jpg')
@@ -47,7 +49,7 @@ def load_img_dataset(download=False):
     print('Validation data')
     print('Data size', len(val_images))
     print('Shape', val_images.shape)
-    return tr_images, tr_targets, val_images, val_targets
+    return fmnist, tr_images, tr_targets, val_images, val_targets
 
 class FMNISTDataset(Dataset):
     def __init__(self, x, y):
@@ -112,7 +114,28 @@ def cal_val_loss(x, y, model, loss_func):
     val_loss = loss_func(y_pred, y)
     return val_loss.item()
 
-tr_images, tr_targets, val_images, val_targets = load_img_dataset(False)
+@torch.no_grad()
+def check_for_rolled_images(img, model, fmnist):
+    img2 = (img / 255)
+    img3 = img2.view(28, 28)
+    preds = []
+    for px in range(-5, 6):
+        img4 = np.roll(img3, px, axis=1)
+        img5 = torch.tensor(img4).view(28 * 28)
+        temp = model(img5)
+        print('model(img5)', temp)
+        detached_temp = temp.detach()
+        print('detached_temp', detached_temp)
+        pred = detached_temp.numpy()
+        print('pred', pred)
+        # pred = model(img5).detach().numpy()
+        preds.append(np.exp(pred)/np.sum(np.exp(pred)))
+    fig, ax = plt.subplots(1,1, figsize=(12,10))
+    plt.title('Probability of each class for various translations')
+    sns.heatmap(np.array(preds), annot=True, ax=ax, fmt='.2f', xticklabels=fmnist.classes,yticklabels=[str(i)+ str(' pixels') for i in range(-5,6)], cmap='gray')
+
+
+fmnist, tr_images, tr_targets, val_images, val_targets = load_img_dataset(False)
 train_dl, val_dl = get_data(tr_images, tr_targets, val_images, val_targets)
 model, loss_func, opt = get_model()
 
@@ -145,30 +168,32 @@ for epoch in range(10):
     val_epoch_accuracy = np.mean(val_is_correct)
     val_accuracies.append(val_epoch_accuracy)
 
+check_for_rolled_images(tr_images[26783], model, fmnist)
 
-epochs = np.arange(10)+1
 
-plt.subplot(211)
-plt.plot(epochs, train_losses, 'bo', label='Training loss')
-plt.plot(epochs, val_losses, 'r', label='Validation loss')
-plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
-plt.title('Training and validation loss with Adam optimizer')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.grid('off')
-plt.show()
-plt.subplot(212)
-plt.plot(epochs, train_accuracies, 'bo', label='Training accuracy')
-plt.plot(epochs, val_accuracies, 'r', label='Validation accuracy')
-plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
-plt.title('Training and validation accuracy with Adam optimizer')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
-plt.legend()
-plt.grid('off')
-plt.show()
+# epochs = np.arange(10)+1
+
+# plt.subplot(211)
+# plt.plot(epochs, train_losses, 'bo', label='Training loss')
+# plt.plot(epochs, val_losses, 'r', label='Validation loss')
+# plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+# plt.title('Training and validation loss with Adam optimizer')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.grid('off')
+# plt.show()
+# plt.subplot(212)
+# plt.plot(epochs, train_accuracies, 'bo', label='Training accuracy')
+# plt.plot(epochs, val_accuracies, 'r', label='Validation accuracy')
+# plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+# plt.title('Training and validation accuracy with Adam optimizer')
+# plt.xlabel('Epochs')
+# plt.ylabel('Accuracy')
+# plt.gca().set_yticklabels(['{:.0f}%'.format(x*100) for x in plt.gca().get_yticks()]) 
+# plt.legend()
+# plt.grid('off')
+# plt.show()
 
 
 
