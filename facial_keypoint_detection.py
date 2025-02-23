@@ -1,5 +1,5 @@
-!pip install torch_summary
-!pip install torchvision
+# !pip install torch_summary
+# !pip install torchvision
 
 import torch
 from torch import nn
@@ -12,8 +12,9 @@ from copy import deepcopy
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-!git clone https://github.com/udacity/P1_Facial_Keypoints.git
-!cd 'P1_Facial_Keypoints'
+# !git clone https://github.com/udacity/P1_Facial_Keypoints.git
+# !cd 'P1_Facial_Keypoints'
+
 root_dir = 'P1_Facial_Keypoints/data/training/'
 image_paths = glob.glob(os.path.join(root_dir, '*.jpg'))
 data = pd.read_csv('P1_Facial_Keypoints/data/training_frames_keypoints.csv')
