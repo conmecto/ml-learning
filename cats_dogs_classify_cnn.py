@@ -29,7 +29,7 @@ import cv2, glob, numpy as np, pandas as pd
 import matplotlib.pyplot as plt
 # %matplotlib inline
 from glob import glob
-!pip install torch_summary
+# !pip install torch_summary
 
 from torch.utils.data import Dataset, DataLoader
 from random import shuffle, seed; seed(10);
