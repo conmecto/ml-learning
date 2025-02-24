@@ -7,10 +7,10 @@ Original file is located at
     https://colab.research.google.com/drive/1WE4DZ-N2xs1MVy1uqvr-7LJjlGlPw2w2
 """
 
-!pip install torch_summary
-!pip install torchvision
+# !pip install torch_summary
+# !pip install torchvision
 
-!pip install torch_snippets
+# !pip install torch_snippets
 
 import torch
 from torch import nn
