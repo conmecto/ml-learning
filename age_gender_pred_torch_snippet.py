@@ -74,7 +74,7 @@ im, gen, age = train_ds[0]
 show(im, title=f'Gender: {gen}\nAge: {age}', sz=5)
 inspect(ims, gens, ages)
 
-ims, gens, ages = next(iter(train_loader))
+ims, gens, ages = next(iter(train_dl))
 inspect(ims, gens, ages)
 
 class AgeGenderClassifier(nn.Module):
